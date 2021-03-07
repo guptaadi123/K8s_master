@@ -1,0 +1,59 @@
+ 
+   - name: installing docker
+     package:
+        name: docker
+        state: present
+   - name: adding damemon to docker
+     copy:
+      src: d
+      dest: /etc/docker/daemon.json
+   - name: enabling docker
+     service:
+       name: docker
+       state: restarted
+       enabled: yes
+   - name: adding kube repo
+     copy:
+      src: /k8s/k
+      dest: /etc/yum.repos.d/kubernetes.repo
+   - name: installing master software
+     package:
+        name: 
+          - kubelet
+          - kubeadm
+          - kubectl
+          
+        state: present
+
+   - name: enabling kubelet
+     service:
+       name: kubelet
+       state: started
+       enabled: yes
+
+   - name: config image
+     command:
+        cmd: "kubeadm config images pull"
+   - name: installing iproute
+     package:
+        name: iproute-tc
+        state: present
+   - name: config master
+     shell: "kubeadm init --pod-network-cidr=10.244.0.0/16 --ignore-preflight-errors=NumCPU --ignore-preflight-errors=Mem"
+   - name: config master to work
+     shell: mkdir -p $HOME/.kube
+   - name: config master to work
+     shell: sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+   - name: config master to work
+     shell: sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+   - name: token creation
+     shell: kubeadm token create --print-join-command
+     register: token
+   - debug:
+       var: token.stdout
+   - name: saving output
+     local_action:
+        copy content="{{ token.stdout }}" dest="/k8s/newtoken"
+   - name: config image
+     shell: 'kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml'
