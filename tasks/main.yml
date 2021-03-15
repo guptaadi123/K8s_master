@@ -1,4 +1,3 @@
- 
    - name: installing docker
      package:
         name: docker
@@ -9,8 +8,8 @@
       dest: /etc/docker/daemon.json
    - name: enabling docker
      service:
-       name: docker
-       state: restarted
+       name:  docker
+       state: started
        enabled: yes
    - name: adding kube repo
      copy:
@@ -21,16 +20,13 @@
         name: 
           - kubelet
           - kubeadm
-          - kubectl
-          
+          - kubectl         
         state: present
-
    - name: enabling kubelet
      service:
        name: kubelet
        state: started
        enabled: yes
-
    - name: config image
      command:
         cmd: "kubeadm config images pull"
@@ -38,6 +34,8 @@
      package:
         name: iproute-tc
         state: present
+   - name: config basic network
+     shell: 'echo "1" > /proc/sys/net/bridge/bridge-nf-call-iptables'
    - name: config master
      shell: "kubeadm init --pod-network-cidr=10.244.0.0/16 --ignore-preflight-errors=NumCPU --ignore-preflight-errors=Mem"
    - name: config master to work
@@ -46,7 +44,6 @@
      shell: sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
    - name: config master to work
      shell: sudo chown $(id -u):$(id -g) $HOME/.kube/config
-
    - name: token creation
      shell: kubeadm token create --print-join-command
      register: token
